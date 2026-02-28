@@ -1,0 +1,11 @@
+id_libro,titulo_libro,id_autor,id_categoria,id_editorial,anio_publicacion,precio_libro
+1,La Odisea,1,1,1,-800,60000
+2,El Código Da Vinci,2,2,2,2003,52000
+3,El Alquimista,3,3,3,1988,40000
+4,Cien Años de Soledad,4,4,4,1967,55000
+5,El Principito,5,5,5,1943,35000
+6,Clean Code,6,6,6,2008,90000
+7,Harry Potter y la Piedra Filosofal,7,7,7,1997,48000
+8,1984,8,8,8,1949,42000
+9,Sapiens,9,9,9,2011,70000
+10,Don Quijote de la Mancha,10,1,10,1605,65000

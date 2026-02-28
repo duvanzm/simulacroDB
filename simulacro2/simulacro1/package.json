@@ -1,0 +1,20 @@
+{
+  "name": "simulacro1",
+  "version": "1.0.0",
+  "description": "- Nombre: Duvan Alexander Zuluaga Macias\r - Cédula: 1045113839\r - Clan: Mc Carthy\r - Repositorio GitHub:",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "csv-parse": "^6.1.0",
+    "express": "^5.2.1",
+    "mongodb": "^7.1.0",
+    "multer": "^2.1.0",
+    "mysql2": "^3.18.2"
+  }
+}
