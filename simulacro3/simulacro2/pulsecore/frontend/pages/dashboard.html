@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PulseCore - Dashboard</title>
+    <link rel="stylesheet" href="../css/estilos.css">
+</head>
+<body>
+
+<!-- ══════════════════════════════════════════════════════════
+     LAYOUT PRINCIPAL
+════════════════════════════════════════════════════════════ -->
+<div class="layout">
+
+    <!-- Barra lateral -->
+    <aside class="sidebar">
+        <div class="sidebar-logo">
+            🩸 PulseCore
+            <span>Plataforma de donantes</span>
+        </div>
+
+        <nav class="sidebar-nav">
+            <a href="#" class="activo" onclick="mostrarSeccion('campanas', this)">📣 Campañas</a>
+            <a href="#" onclick="mostrarSeccion('citas', this)">📅 Citas</a>
+            <a href="#" onclick="mostrarSeccion('tickets', this)">🎫 Tickets</a>
+            <!-- Solo ADMIN ve el enlace de usuarios -->
+            <a href="#" id="nav-usuarios" class="oculto" onclick="mostrarSeccion('usuarios', this)">👥 Usuarios</a>
+        </nav>
+
+        <div class="sidebar-usuario">
+            <strong id="sb-nombre">Cargando...</strong>
+            <span id="sb-roles"></span>
+            <button onclick="cerrarSesion()">Cerrar sesión</button>
+        </div>
+    </aside>
+
+    <!-- Contenido -->
+    <main class="contenido">
+
+        <!-- ── Sección: Campañas ─────────────────────────────── -->
+        <section id="sec-campanas">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px">
+                <h2>📣 Campañas</h2>
+                <!-- Solo ADMIN puede crear campañas -->
+                <button id="btn-nueva-campana" class="btn btn-primario oculto"
+                        onclick="abrirModalCampana()">+ Nueva campaña</button>
+            </div>
+            <div class="panel">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Nombre</th>
+                            <th>Ciudades</th>
+                            <th>Inicio</th>
+                            <th>Fin</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabla-campanas">
+                        <tr><td colspan="4" style="text-align:center;color:#999">Cargando...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- ── Sección: Citas ────────────────────────────────── -->
+        <section id="sec-citas" class="oculto">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px">
+                <h2>📅 Citas</h2>
+                <button class="btn btn-primario" onclick="abrirModalCita()">+ Nueva cita</button>
+            </div>
+            <div class="panel">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Usuario</th>
+                            <th>Campaña</th>
+                            <th>Fecha</th>
+                            <th>Ubicación</th>
+                            <th>Estado</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabla-citas">
+                        <tr><td colspan="5" style="text-align:center;color:#999">Cargando...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- ── Sección: Tickets ──────────────────────────────── -->
+        <section id="sec-tickets" class="oculto">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px">
+                <h2>🎫 Tickets de soporte</h2>
+                <button class="btn btn-primario" onclick="abrirModalTicket()">+ Nuevo ticket</button>
+            </div>
+            <div class="panel">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Asunto</th>
+                            <th>Categoría</th>
+                            <th>Prioridad</th>
+                            <th>Estado</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabla-tickets">
+                        <tr><td colspan="6" style="text-align:center;color:#999">Cargando...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- ── Sección: Usuarios (solo ADMIN) ───────────────── -->
+        <section id="sec-usuarios" class="oculto">
+            <h2 style="margin-bottom:20px">👥 Usuarios del sistema</h2>
+            <div class="panel">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Nombre</th>
+                            <th>Email</th>
+                            <th>Ciudad</th>
+                            <th>Estado</th>
+                            <th>Roles</th>
+                            <th>Nivel donante</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabla-usuarios">
+                        <tr><td colspan="6" style="text-align:center;color:#999">Cargando...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+    </main>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════
+     MODALES
+════════════════════════════════════════════════════════════ -->
+
+<!-- Modal: Nueva campaña -->
+<div id="modal-campana" class="modal-fondo oculto">
+    <div class="modal-caja">
+        <h3>Nueva campaña</h3>
+        <div id="error-campana" class="mensaje-error oculto"></div>
+        <div class="grupo-campo">
+            <label>Nombre</label>
+            <input type="text" id="c-nombre" placeholder="Nombre de la campaña">
+        </div>
+        <div class="grupo-campo">
+            <label>Fecha inicio</label>
+            <input type="date" id="c-inicio">
+        </div>
+        <div class="grupo-campo">
+            <label>Fecha fin</label>
+            <input type="date" id="c-fin">
+        </div>
+        <div class="grupo-campo">
+            <label>Ciudades (separadas por coma)</label>
+            <input type="text" id="c-ciudades" placeholder="Medellín, Bogotá, Cali">
+        </div>
+        <div class="modal-acciones">
+            <button class="btn btn-secundario" onclick="cerrarModales()">Cancelar</button>
+            <button class="btn btn-primario" onclick="crearCampana()">Crear</button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Nueva cita -->
+<div id="modal-cita" class="modal-fondo oculto">
+    <div class="modal-caja">
+        <h3>Agendar cita</h3>
+        <div id="error-cita" class="mensaje-error oculto"></div>
+        <div class="grupo-campo">
+            <label>Campaña</label>
+            <select id="ct-campana"><option value="">Sin campaña</option></select>
+        </div>
+        <div class="grupo-campo">
+            <label>Fecha y hora</label>
+            <input type="datetime-local" id="ct-fecha">
+        </div>
+        <div class="grupo-campo">
+            <label>Ubicación</label>
+            <input type="text" id="ct-ubicacion" placeholder="Dirección o sede">
+        </div>
+        <div class="modal-acciones">
+            <button class="btn btn-secundario" onclick="cerrarModales()">Cancelar</button>
+            <button class="btn btn-primario" onclick="crearCita()">Agendar</button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Nuevo ticket -->
+<div id="modal-ticket" class="modal-fondo oculto">
+    <div class="modal-caja">
+        <h3>Nuevo ticket de soporte</h3>
+        <div id="error-ticket" class="mensaje-error oculto"></div>
+        <div class="grupo-campo">
+            <label>Asunto</label>
+            <input type="text" id="tk-asunto" placeholder="Describe brevemente el problema">
+        </div>
+        <div class="grupo-campo">
+            <label>Categoría</label>
+            <select id="tk-categoria">
+                <option value="ACCOUNT">Cuenta</option>
+                <option value="APPOINTMENTS">Citas</option>
+                <option value="CAMPAIGNS">Campañas</option>
+                <option value="NOTIFICATIONS">Notificaciones</option>
+                <option value="OTHER">Otro</option>
+            </select>
+        </div>
+        <div class="grupo-campo">
+            <label>Prioridad</label>
+            <select id="tk-prioridad">
+                <option value="P1">P1 - Crítica</option>
+                <option value="P2">P2 - Alta</option>
+                <option value="P3" selected>P3 - Media</option>
+                <option value="P4">P4 - Baja</option>
+            </select>
+        </div>
+        <div class="modal-acciones">
+            <button class="btn btn-secundario" onclick="cerrarModales()">Cancelar</button>
+            <button class="btn btn-primario" onclick="crearTicket()">Crear ticket</button>
+        </div>
+    </div>
+</div>
+
+<script>
+// ════════════════════════════════════════════════════════════
+// INICIALIZACIÓN
+// ════════════════════════════════════════════════════════════
+
+// Verificar sesión activa
+const token   = localStorage.getItem('pc_token');
+const usuario = JSON.parse(localStorage.getItem('pc_usuario') || 'null');
+
+if (!token || !usuario) {
+    window.location.href = 'login.html';
+}
+
+// Roles del usuario
+const roles      = usuario?.roles || [];
+const esAdmin    = roles.includes('ADMIN');
+const esAgente   = roles.includes('AGENT');
+
+// Al cargar la página
+document.addEventListener('DOMContentLoaded', () => {
+    // Mostrar datos del usuario en la sidebar
+    document.getElementById('sb-nombre').textContent = usuario.nombre;
+    document.getElementById('sb-roles').innerHTML = roles
+        .map(r => `<span class="badge badge-${r.toLowerCase()}">${r}</span>`)
+        .join(' ');
+
+    // Mostrar opciones según rol
+    if (esAdmin) {
+        document.getElementById('nav-usuarios').classList.remove('oculto');
+        document.getElementById('btn-nueva-campana').classList.remove('oculto');
+    }
+
+    // Cargar campañas por defecto
+    cargarCampanas();
+});
+
+// ════════════════════════════════════════════════════════════
+// NAVEGACIÓN ENTRE SECCIONES
+// ════════════════════════════════════════════════════════════
+
+const secciones = ['campanas', 'citas', 'tickets', 'usuarios'];
+
+function mostrarSeccion(nombre, enlace) {
+    // Ocultar todas las secciones
+    secciones.forEach(s => {
+        document.getElementById(`sec-${s}`)?.classList.add('oculto');
+    });
+
+    // Quitar clase activo de todos los links
+    document.querySelectorAll('.sidebar-nav a').forEach(a => a.classList.remove('activo'));
+
+    // Mostrar la sección seleccionada
+    document.getElementById(`sec-${nombre}`)?.classList.remove('oculto');
+    if (enlace) enlace.classList.add('activo');
+
+    // Cargar los datos de la sección
+    const cargadores = {
+        campanas: cargarCampanas,
+        citas:    cargarCitas,
+        tickets:  cargarTickets,
+        usuarios: cargarUsuarios,
+    };
+    cargadores[nombre]?.();
+}
+
+// ════════════════════════════════════════════════════════════
+// UTILIDADES DE FETCH
+// ════════════════════════════════════════════════════════════
+
+/**
+ * Wrapper de fetch que agrega el token de autorización automáticamente.
+ */
+async function apiFetch(url, opciones = {}) {
+    const respuesta = await fetch(url, {
+        ...opciones,
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+            ...(opciones.headers || {}),
+        },
+    });
+
+    if (respuesta.status === 401) {
+        // Token expirado: redirigir al login
+        cerrarSesion();
+    }
+
+    return respuesta;
+}
+
+function cerrarSesion() {
+    localStorage.removeItem('pc_token');
+    localStorage.removeItem('pc_usuario');
+    window.location.href = 'login.html';
+}
+
+function formatearFecha(str) {
+    if (!str) return '-';
+    return new Date(str).toLocaleDateString('es-CO', {
+        year: 'numeric', month: 'short', day: 'numeric'
+    });
+}
+
+// ════════════════════════════════════════════════════════════
+// CAMPAÑAS
+// ════════════════════════════════════════════════════════════
+
+async function cargarCampanas() {
+    const cuerpo = document.getElementById('tabla-campanas');
+    try {
+        const res  = await apiFetch('/api/campaigns');
+        const data = await res.json();
+
+        if (!data.campanas || data.campanas.length === 0) {
+            cuerpo.innerHTML = '<tr><td colspan="4" style="text-align:center;color:#999">Sin campañas</td></tr>';
+            return;
+        }
+
+        cuerpo.innerHTML = data.campanas.map(c => `
+            <tr>
+                <td><strong>${c.nombre}</strong></td>
+                <td>${(c.ciudades || []).filter(Boolean).join(', ') || '-'}</td>
+                <td>${formatearFecha(c.fecha_inicio)}</td>
+                <td>${formatearFecha(c.fecha_fin)}</td>
+            </tr>
+        `).join('');
+
+    } catch (err) {
+        cuerpo.innerHTML = '<tr><td colspan="4" style="color:red">Error cargando campañas</td></tr>';
+    }
+}
+
+async function crearCampana() {
+    const nombre   = document.getElementById('c-nombre').value.trim();
+    const inicio   = document.getElementById('c-inicio').value;
+    const fin      = document.getElementById('c-fin').value;
+    const ciudadesRaw = document.getElementById('c-ciudades').value;
+    const ciudades = ciudadesRaw.split(',').map(c => c.trim()).filter(Boolean);
+
+    if (!nombre || !inicio || !fin) {
+        mostrarErrorModal('error-campana', 'Nombre y fechas son obligatorios');
+        return;
+    }
+
+    const res = await apiFetch('/api/campaigns', {
+        method: 'POST',
+        body: JSON.stringify({ nombre, fecha_inicio: inicio, fecha_fin: fin, ciudades }),
+    });
+
+    if (res.ok) {
+        cerrarModales();
+        cargarCampanas();
+    } else {
+        const d = await res.json();
+        mostrarErrorModal('error-campana', d.error);
+    }
+}
+
+// ════════════════════════════════════════════════════════════
+// CITAS
+// ════════════════════════════════════════════════════════════
+
+async function cargarCitas() {
+    const cuerpo = document.getElementById('tabla-citas');
+    try {
+        const res  = await apiFetch('/api/appointments');
+        const data = await res.json();
+
+        if (!data.citas || data.citas.length === 0) {
+            cuerpo.innerHTML = '<tr><td colspan="5" style="text-align:center;color:#999">Sin citas</td></tr>';
+            return;
+        }
+
+        cuerpo.innerHTML = data.citas.map(c => `
+            <tr>
+                <td>${c.usuario_nombre || c.usuario_email}</td>
+                <td>${c.campana || '-'}</td>
+                <td>${formatearFecha(c.programada_en)}</td>
+                <td>${c.ubicacion || '-'}</td>
+                <td><span class="badge">${c.estado || 'SCHEDULED'}</span></td>
+            </tr>
+        `).join('');
+
+    } catch (err) {
+        cuerpo.innerHTML = '<tr><td colspan="5" style="color:red">Error cargando citas</td></tr>';
+    }
+}
+
+async function abrirModalCita() {
+    // Cargar campañas en el select del modal
+    const res  = await apiFetch('/api/campaigns');
+    const data = await res.json();
+    const sel  = document.getElementById('ct-campana');
+    sel.innerHTML = '<option value="">Sin campaña</option>' +
+        (data.campanas || []).map(c => `<option value="${c.id}">${c.nombre}</option>`).join('');
+
+    document.getElementById('modal-cita').classList.remove('oculto');
+}
+
+async function crearCita() {
+    const campaign_id  = document.getElementById('ct-campana').value || null;
+    const programada_en = document.getElementById('ct-fecha').value;
+    const ubicacion    = document.getElementById('ct-ubicacion').value.trim();
+
+    if (!programada_en) {
+        mostrarErrorModal('error-cita', 'La fecha es obligatoria');
+        return;
+    }
+
+    const res = await apiFetch('/api/appointments', {
+        method: 'POST',
+        body: JSON.stringify({ campaign_id, programada_en, ubicacion }),
+    });
+
+    if (res.ok) {
+        cerrarModales();
+        cargarCitas();
+    } else {
+        const d = await res.json();
+        mostrarErrorModal('error-cita', d.error);
+    }
+}
+
+// ════════════════════════════════════════════════════════════
+// TICKETS
+// ════════════════════════════════════════════════════════════
+
+async function cargarTickets() {
+    const cuerpo = document.getElementById('tabla-tickets');
+    try {
+        const res  = await apiFetch('/api/tickets');
+        const data = await res.json();
+
+        if (!data.tickets || data.tickets.length === 0) {
+            cuerpo.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#999">Sin tickets</td></tr>';
+            return;
+        }
+
+        cuerpo.innerHTML = data.tickets.map(t => `
+            <tr>
+                <td><code>${t.ticket_id}</code></td>
+                <td>${t.asunto}</td>
+                <td>${t.categoria}</td>
+                <td>${t.prioridad}</td>
+                <td><span class="badge badge-${t.estado?.toLowerCase()}">${t.estado}</span></td>
+                <td>
+                    <button class="btn btn-sm btn-secundario"
+                            onclick="window.location.href='ticket-detalle.html?id=${t.ticket_id}'">
+                        Ver
+                    </button>
+                </td>
+            </tr>
+        `).join('');
+
+    } catch (err) {
+        cuerpo.innerHTML = '<tr><td colspan="6" style="color:red">Error cargando tickets</td></tr>';
+    }
+}
+
+function abrirModalTicket() {
+    document.getElementById('modal-ticket').classList.remove('oculto');
+}
+
+async function crearTicket() {
+    const asunto    = document.getElementById('tk-asunto').value.trim();
+    const categoria = document.getElementById('tk-categoria').value;
+    const prioridad = document.getElementById('tk-prioridad').value;
+
+    if (!asunto) {
+        mostrarErrorModal('error-ticket', 'El asunto es obligatorio');
+        return;
+    }
+
+    const res = await apiFetch('/api/tickets', {
+        method: 'POST',
+        body: JSON.stringify({ asunto, categoria, prioridad }),
+    });
+
+    if (res.ok) {
+        cerrarModales();
+        cargarTickets();
+    } else {
+        const d = await res.json();
+        mostrarErrorModal('error-ticket', d.error);
+    }
+}
+
+// ════════════════════════════════════════════════════════════
+// USUARIOS (solo ADMIN)
+// ════════════════════════════════════════════════════════════
+
+async function cargarUsuarios() {
+    if (!esAdmin) return;
+    const cuerpo = document.getElementById('tabla-usuarios');
+
+    try {
+        const res  = await apiFetch('/api/users');
+        const data = await res.json();
+
+        cuerpo.innerHTML = (data.usuarios || []).map(u => `
+            <tr>
+                <td>${u.nombre_completo}</td>
+                <td>${u.email}</td>
+                <td>${u.ciudad || '-'}</td>
+                <td>${u.estado}</td>
+                <td>${(u.roles || []).map(r =>
+                    `<span class="badge badge-${r.toLowerCase()}">${r}</span>`
+                ).join(' ')}</td>
+                <td>${u.nivel_donante || '-'}</td>
+            </tr>
+        `).join('');
+
+    } catch (err) {
+        cuerpo.innerHTML = '<tr><td colspan="6" style="color:red">Error cargando usuarios</td></tr>';
+    }
+}
+
+// ════════════════════════════════════════════════════════════
+// UTILIDADES DE MODALES
+// ════════════════════════════════════════════════════════════
+
+function abrirModalCampana() {
+    document.getElementById('modal-campana').classList.remove('oculto');
+}
+
+function cerrarModales() {
+    document.querySelectorAll('.modal-fondo').forEach(m => m.classList.add('oculto'));
+    // Limpiar errores
+    document.querySelectorAll('.mensaje-error').forEach(e => e.classList.add('oculto'));
+}
+
+function mostrarErrorModal(idDiv, mensaje) {
+    const div = document.getElementById(idDiv);
+    div.textContent = mensaje;
+    div.classList.remove('oculto');
+}
+
+// Cerrar modal al hacer clic en el fondo
+document.querySelectorAll('.modal-fondo').forEach(fondo => {
+    fondo.addEventListener('click', (e) => {
+        if (e.target === fondo) cerrarModales();
+    });
+});
+</script>
+
+</body>
+</html>

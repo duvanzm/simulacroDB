@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PulseCore - Detalle de Ticket</title>
+    <link rel="stylesheet" href="../css/estilos.css">
+</head>
+<body>
+
+<div class="layout">
+
+    <!-- Sidebar -->
+    <aside class="sidebar">
+        <div class="sidebar-logo">
+            🩸 PulseCore
+            <span>Plataforma de donantes</span>
+        </div>
+        <nav class="sidebar-nav">
+            <a href="dashboard.html">← Volver al dashboard</a>
+        </nav>
+        <div class="sidebar-usuario">
+            <strong id="sb-nombre">Cargando...</strong>
+            <span id="sb-roles"></span>
+            <button onclick="cerrarSesion()">Cerrar sesión</button>
+        </div>
+    </aside>
+
+    <!-- Contenido -->
+    <main class="contenido">
+        <div id="cargando" style="color:#999">Cargando ticket...</div>
+        <div id="detalle-ticket" class="oculto">
+
+            <!-- Cabecera del ticket -->
+            <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:24px">
+                <div>
+                    <h2 id="tk-asunto">-</h2>
+                    <code id="tk-id" style="color:#999; font-size:0.85rem"></code>
+                </div>
+                <!-- Selector de estado: solo ADMIN y AGENT -->
+                <div id="cambio-estado" class="oculto" style="display:flex; gap:10px; align-items:center">
+                    <select id="sel-estado" style="padding:8px; border:1px solid #ddd; border-radius:5px">
+                        <option value="OPEN">OPEN</option>
+                        <option value="IN_PROGRESS">IN_PROGRESS</option>
+                        <option value="RESOLVED">RESOLVED</option>
+                        <option value="CLOSED">CLOSED</option>
+                    </select>
+                    <button class="btn btn-verde" onclick="actualizarEstado()">Guardar estado</button>
+                </div>
+            </div>
+
+            <!-- Meta información del ticket -->
+            <div class="panel">
+                <div class="ticket-meta">
+                    <div class="ticket-meta-item">
+                        <label>Estado</label>
+                        <span id="tk-estado" class="badge">-</span>
+                    </div>
+                    <div class="ticket-meta-item">
+                        <label>Categoría</label>
+                        <span id="tk-categoria">-</span>
+                    </div>
+                    <div class="ticket-meta-item">
+                        <label>Prioridad</label>
+                        <span id="tk-prioridad">-</span>
+                    </div>
+                    <div class="ticket-meta-item">
+                        <label>Usuario</label>
+                        <span id="tk-usuario">-</span>
+                    </div>
+                    <div class="ticket-meta-item">
+                        <label>Tags</label>
+                        <span id="tk-tags">-</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Información relacionada (endpoint híbrido) -->
+            <div class="panel">
+                <div class="panel-cabecera">
+                    <h3>🔗 Entidad relacionada</h3>
+                </div>
+                <div id="relacion-sql" style="font-size:0.88rem; color:#555">Cargando...</div>
+            </div>
+
+            <!-- Mensajes del hilo -->
+            <div class="panel">
+                <div class="panel-cabecera">
+                    <h3>💬 Mensajes</h3>
+                </div>
+                <div id="mensajes-lista" class="mensajes-lista"></div>
+            </div>
+
+            <!-- Historial de eventos -->
+            <div class="panel">
+                <div class="panel-cabecera">
+                    <h3>📋 Historial de eventos</h3>
+                </div>
+                <ul id="historial-lista" class="historial-lista"></ul>
+            </div>
+
+        </div>
+    </main>
+</div>
+
+<script>
+// ════════════════════════════════════════════════════════════
+// SESIÓN
+// ════════════════════════════════════════════════════════════
+const token   = localStorage.getItem('pc_token');
+const usuario = JSON.parse(localStorage.getItem('pc_usuario') || 'null');
+
+if (!token || !usuario) window.location.href = 'login.html';
+
+const roles   = usuario?.roles || [];
+const esAdmin = roles.includes('ADMIN');
+const esAgente = roles.includes('AGENT');
+
+// Obtener el ID del ticket de la URL (?id=TCK-000001)
+const params   = new URLSearchParams(window.location.search);
+const ticketId = params.get('id');
+
+if (!ticketId) window.location.href = 'dashboard.html';
+
+// Mostrar info en sidebar
+document.getElementById('sb-nombre').textContent = usuario.nombre;
+document.getElementById('sb-roles').innerHTML = roles
+    .map(r => `<span class="badge badge-${r.toLowerCase()}">${r}</span>`).join(' ');
+
+// ════════════════════════════════════════════════════════════
+// CARGA DEL TICKET
+// ════════════════════════════════════════════════════════════
+
+async function cargarTicket() {
+    try {
+        // Cargar ticket completo
+        const resTicket = await apiFetch(`/api/tickets/${ticketId}`);
+        if (!resTicket.ok) {
+            document.getElementById('cargando').textContent = 'Ticket no encontrado';
+            return;
+        }
+        const ticket = await resTicket.json();
+
+        // Cargar entidad relacionada (endpoint híbrido)
+        const resRel = await apiFetch(`/api/tickets/${ticketId}/related`);
+        const rel    = resRel.ok ? await resRel.json() : null;
+
+        renderTicket(ticket, rel);
+
+    } catch (err) {
+        document.getElementById('cargando').textContent = 'Error cargando el ticket';
+    }
+}
+
+function renderTicket(ticket, rel) {
+    // Mostrar detalle
+    document.getElementById('cargando').classList.add('oculto');
+    document.getElementById('detalle-ticket').classList.remove('oculto');
+
+    // Cabecera
+    document.getElementById('tk-asunto').textContent = ticket.asunto;
+    document.getElementById('tk-id').textContent = ticket.ticket_id;
+
+    // Meta
+    const estadoEl = document.getElementById('tk-estado');
+    estadoEl.textContent = ticket.estado;
+    estadoEl.className = `badge badge-${ticket.estado.toLowerCase()}`;
+
+    document.getElementById('tk-categoria').textContent = ticket.categoria;
+    document.getElementById('tk-prioridad').textContent  = ticket.prioridad;
+    document.getElementById('tk-usuario').textContent    = ticket.usuario_email;
+    document.getElementById('tk-tags').textContent       = ticket.tags?.join(', ') || '-';
+
+    // Mostrar selector de estado solo a ADMIN y AGENT
+    if (esAdmin || esAgente) {
+        const cambioEl = document.getElementById('cambio-estado');
+        cambioEl.style.display = 'flex';
+        cambioEl.classList.remove('oculto');
+        document.getElementById('sel-estado').value = ticket.estado;
+    }
+
+    // Entidad relacionada del endpoint híbrido
+    const relDiv = document.getElementById('relacion-sql');
+    if (rel?.relacion_sql?.datos) {
+        const datos = rel.relacion_sql.datos;
+        relDiv.innerHTML = `
+            <strong>Tipo:</strong> ${rel.relacion_sql.tipo} &nbsp;|&nbsp;
+            <strong>Ref:</strong> ${rel.relacion_sql.ref}<br><br>
+            <pre style="background:#f9f9f9; padding:12px; border-radius:5px; font-size:0.8rem; overflow:auto">
+${JSON.stringify(datos, null, 2)}</pre>
+        `;
+    } else {
+        relDiv.textContent = 'Sin entidad relacionada';
+    }
+
+    // Mensajes
+    const mensajesEl = document.getElementById('mensajes-lista');
+    if (!ticket.mensajes || ticket.mensajes.length === 0) {
+        mensajesEl.innerHTML = '<p style="color:#999;font-size:0.85rem">Sin mensajes en este ticket</p>';
+    } else {
+        mensajesEl.innerHTML = ticket.mensajes.map(m => {
+            const tipo = (m.autor_tipo || 'SYSTEM').toLowerCase();
+            const clase = tipo === 'agent' ? 'agente' : tipo === 'user' ? 'usuario' : 'sistema';
+            return `
+                <div class="mensaje-burbuja ${clase}">
+                    <div class="msg-autor">${m.autor_nombre || 'Sistema'} · ${formatearFecha(m.enviado_en)}</div>
+                    ${m.cuerpo}
+                    ${m.adjunto_url ? `<br><a href="${m.adjunto_url}" target="_blank">📎 Adjunto</a>` : ''}
+                </div>
+            `;
+        }).join('');
+    }
+
+    // Historial
+    const historialEl = document.getElementById('historial-lista');
+    if (!ticket.historial || ticket.historial.length === 0) {
+        historialEl.innerHTML = '<p style="color:#999;font-size:0.85rem">Sin eventos registrados</p>';
+    } else {
+        historialEl.innerHTML = ticket.historial.map(h => `
+            <li>
+                <strong>${h.tipo_evento}</strong> — ${h.descripcion || ''}
+                <span class="fecha">${formatearFecha(h.ocurrido_en)}</span>
+            </li>
+        `).join('');
+    }
+}
+
+// ════════════════════════════════════════════════════════════
+// ACTUALIZAR ESTADO DEL TICKET
+// ════════════════════════════════════════════════════════════
+
+async function actualizarEstado() {
+    const nuevoEstado = document.getElementById('sel-estado').value;
+
+    const res = await apiFetch(`/api/tickets/${ticketId}/status`, {
+        method: 'PATCH',
+        body: JSON.stringify({ estado: nuevoEstado }),
+    });
+
+    if (res.ok) {
+        alert('Estado actualizado correctamente');
+        cargarTicket(); // Recargar para mostrar el nuevo historial
+    } else {
+        const d = await res.json();
+        alert('Error: ' + d.error);
+    }
+}
+
+// ════════════════════════════════════════════════════════════
+// UTILIDADES
+// ════════════════════════════════════════════════════════════
+
+async function apiFetch(url, opciones = {}) {
+    const res = await fetch(url, {
+        ...opciones,
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+            ...(opciones.headers || {}),
+        },
+    });
+    if (res.status === 401) cerrarSesion();
+    return res;
+}
+
+function formatearFecha(str) {
+    if (!str) return '-';
+    return new Date(str).toLocaleString('es-CO', {
+        year: 'numeric', month: 'short', day: 'numeric',
+        hour: '2-digit', minute: '2-digit'
+    });
+}
+
+function cerrarSesion() {
+    localStorage.removeItem('pc_token');
+    localStorage.removeItem('pc_usuario');
+    window.location.href = 'login.html';
+}
+
+// Cargar al iniciar
+cargarTicket();
+</script>
+
+</body>
+</html>
