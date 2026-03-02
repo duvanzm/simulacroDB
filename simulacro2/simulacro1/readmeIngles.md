@@ -4,10 +4,10 @@
 # STUDENT INFORMATION
 
 
-Name: Duvan Alexander Zuluaga Macias
-ID Number: 1045113839
-Clan: Mc Carthy
-GitHub Repository:
+- ***Name:*** Duvan Alexander Zuluaga Macias
+- ***ID Number:*** 1045113839
+- ***Clan:*** Mc Carthy
+- ***GitHub Repository:***
 
 ---
 
@@ -121,7 +121,10 @@ The process works as follows:
 2. Upload Authors
 
    POST Endpoint:
+
+```   
    /api/upload/autores
+```
 
    Description:
    Allows uploading a CSV file and loading the data
@@ -132,8 +135,10 @@ The process works as follows:
 3. Get Logs
 
    GET Endpoint:
-   /logs
 
+```
+   /logs
+```
    Description:
    Returns all records stored in MongoDB
    ordered by descending date.
