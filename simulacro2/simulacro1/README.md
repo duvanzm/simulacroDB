@@ -51,13 +51,15 @@ git clone repo
 cd repo
 ```
 
-- istalar dependencias 
+- instalar dependencias 
 
 ```
 npm install express multer csv-parse mysql2 mongodb
 ```
 
 ## 3. Crear las tablas en db  
+
+- Corre los comandos DDL en ORM de la BD
 
 ```
 
@@ -80,9 +82,18 @@ Hise uso de las formas de normalizacon 1FN, 2FN y 3FN para descomponer la inform
 
 # Explicación del proceso de normalización o diseño NoSQL
 
+- Datos iniciales 
 
+![img](./img)
+img
+
+## Entidades
+
+- usuarios 
 
 img
+
+
 
 
 # Guía del Proceso de Migración Masiva
